@@ -1,15 +1,15 @@
 import { app } from "./app.js";
-import { closeDatabaseConnection, verifyDatabaseConnection } from "./config/database.js";
 import { env } from "./config/env.js";
+import { prisma } from "./lib/prisma.js";
 
 let isShuttingDown = false;
 
 async function startServer(): Promise<void> {
-    await verifyDatabaseConnection();
+    await prisma.$connect();
     console.log("Connected to PostgreSQL (Neon).");
 
     const server = app.listen(env.port, () => {
-        console.log(`Server running on http://localhost:${env.port}`);
+        console.log(`Server running on port ${env.port}`);
     });
 
     const gracefulShutdown = async (signal: NodeJS.Signals): Promise<void> => {
@@ -21,7 +21,7 @@ async function startServer(): Promise<void> {
         console.log(`${signal} received. Shutting down gracefully...`);
 
         server.close(async () => {
-            await closeDatabaseConnection();
+            await prisma.$disconnect();
             process.exit(0);
         });
     };

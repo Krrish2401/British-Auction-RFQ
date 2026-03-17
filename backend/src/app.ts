@@ -1,11 +1,25 @@
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import express from "express";
 
-import { healthRouter } from "./routes/health.route.js";
+import { authRouter } from "./routes/auth.routes.js";
+import { rfqRouter } from "./routes/rfq.routes.js";
 
 export const app = express();
 
+app.use(
+    cors({
+        origin: "http://localhost:3000",
+        credentials: true,
+        methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"]
+    })
+);
 app.use(express.json());
-app.use("/api", healthRouter);
+app.use(cookieParser());
+
+app.use("/api/auth", authRouter);
+app.use("/api/rfq", rfqRouter);
 
 app.use((req, res) => {
     res.status(404).json({

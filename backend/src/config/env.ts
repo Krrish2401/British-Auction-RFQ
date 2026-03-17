@@ -22,5 +22,6 @@ if (!Number.isInteger(parsedPort) || parsedPort <= 0) {
 export const env = {
     nodeEnv: process.env.NODE_ENV ?? "development",
     port: parsedPort,
-    databaseUrl: getRequiredEnv("DATABASE_URL")
+    databaseUrl: getRequiredEnv("DATABASE_URL"),
+    jwtSecret: getRequiredEnv("JWT_SECRET")
 } as const;
