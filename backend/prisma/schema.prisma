@@ -6,11 +6,227 @@ datasource db {
     provider = "postgresql"
 }
 
-model DummyItem {
-    id        String   @id @default(cuid())
-    name      String
-    notes     String?
-    isActive  Boolean  @default(true)
+enum Role {
+    BUYER
+    SUPPLIER
+}
+
+enum AuctionStatus {
+    DRAFT // RFQ created but auction not started yet
+    ACTIVE // Bidding is open
+    CLOSED // Ended naturally (no more extensions possible, time ran out)
+    FORCE_CLOSED // Hit the hard forced close deadline
+}
+
+enum ExtensionTriggerType {
+    BID_RECEIVED // Any bid in last X mins triggers extension
+    ANY_RANK_CHANGE // Any rank change in last X mins triggers extension
+    L1_CHANGE_ONLY // Only when lowest bidder (L1) changes
+}
+
+enum ActivityType {
+    BID_SUBMITTED // A supplier placed a bid
+    AUCTION_EXTENDED // Auction time was extended
+    AUCTION_OPENED // Auction became active
+    AUCTION_CLOSED // Auction closed naturally
+    AUCTION_FORCE_CLOSED // Auction hit forced close time
+    RANK_CHANGED // Rankings changed after a bid
+}
+
+model User {
+    id           String @id @default(uuid())
+    email        String @unique
+    passwordHash String
+    name         String
+    role         Role
+
+    // Relations
+    rfqs RFQ[] @relation("BuyerRFQs") // Only buyers create RFQs
+    bids Bid[] // Only suppliers submit bids
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([email])
+    @@index([role])
+}
+
+// ============================================================
+// RFQ (Request for Quotation)
+// Created by a buyer. Has one AuctionConfig for British Auction settings.
+// ============================================================
+
+model RFQ {
+    id          String @id @default(uuid())
+    referenceId String @unique // Human-readable ID e.g. "RFQ-2024-001"
+
+    name    String
+    buyerId String
+    buyer   User   @relation("BuyerRFQs", fields: [buyerId], references: [id])
+
+    // Timing
+    bidStartTime         DateTime // When suppliers can start bidding
+    bidCloseTime         DateTime // Current scheduled close time (gets updated on extensions)
+    originalBidCloseTime DateTime // Never changes — audit trail of original close time
+    forcedCloseTime      DateTime // Absolute hard stop — NEVER changes, NEVER exceeded
+
+    // Service details
+    pickupDate DateTime // Pickup / service date
+
+    // Auction state
+    status AuctionStatus @default(DRAFT)
+
+    // Relations
+    auctionConfig AuctionConfig?
+    bids          Bid[]
+    extensions    AuctionExtension[]
+    activityLogs  ActivityLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Validation enforced at app layer:
+    // bidStartTime < bidCloseTime < forcedCloseTime
+    // bidStartTime > now() at creation time
+
+    @@index([status])
+    @@index([buyerId])
+    @@index([bidCloseTime])
+}
+
+// ============================================================
+// AUCTION CONFIG
+// British Auction settings chosen by the buyer at RFQ creation.
+// One-to-one with RFQ.
+// ============================================================
+
+model AuctionConfig {
+    id    String @id @default(uuid())
+    rfqId String @unique
+    rfq   RFQ    @relation(fields: [rfqId], references: [id])
+
+    // X — Trigger Window in minutes
+    // System watches for activity in the last X minutes before close
+    // Validated: must be < total auction duration in minutes
+    triggerWindowMins Int
+
+    // Y — Extension Duration in minutes
+    // How much time to add when trigger fires
+    // Validated: must be > 0
+    extensionDurationMins Int
+
+    // Which type of activity triggers an extension
+    triggerType ExtensionTriggerType
+
+    createdAt DateTime @default(now())
+}
+
+// ============================================================
+// BID
+// Each row = one bid submission by a supplier for an RFQ.
+// Suppliers can submit multiple bids (each is a new row).
+// No bid withdrawal allowed — all bids are permanent once submitted.
+// Suppliers CAN bid higher than their previous bid (no direction restriction).
+// ============================================================
+
+model Bid {
+    id         String @id @default(uuid())
+    rfqId      String
+    rfq        RFQ    @relation(fields: [rfqId], references: [id])
+    supplierId String
+    supplier   User   @relation(fields: [supplierId], references: [id])
+
+    // Quote fields (from assignment)
+    carrierName        String
+    freightCharges     Decimal  @db.Decimal(12, 2)
+    originCharges      Decimal  @db.Decimal(12, 2)
+    destinationCharges Decimal  @db.Decimal(12, 2)
+    transitTimeDays    Int // Transit time in days
+    quoteValidityDate  DateTime // Until when this quote is valid
+
+    // Total is computed and stored for fast ranking queries
+    // totalAmount = freightCharges + originCharges + destinationCharges
+    totalAmount Decimal @db.Decimal(12, 2)
+
+    // Rank at the time this bid was submitted (L1 = 1, L2 = 2, ...)
+    // Ranks of older bids become stale as new bids come in
+    // Always query current rank from latest bid per supplier
+    rankAtSubmission Int
+
+    // Server timestamp — used as source of truth for:
+    // 1. Whether bid was received before close time
+    // 2. Tiebreaker when two bids have identical totalAmount
+    //    (earlier receivedAt wins the better rank)
+    receivedAt DateTime @default(now())
+
+    // Which extension (if any) this bid triggered
+    triggeredExtension AuctionExtension?
+
+    createdAt DateTime @default(now())
+
+    @@index([rfqId, supplierId])
+    @@index([rfqId, totalAmount, receivedAt]) // For fast ranking queries
+    @@index([rfqId, receivedAt]) // For trigger window queries
+}
+
+// ============================================================
+// AUCTION EXTENSION
+// Every time the auction close time is extended, one row is inserted.
+// Critical for audit trail and activity log.
+// ============================================================
+
+model AuctionExtension {
+    id    String @id @default(uuid())
+    rfqId String
+    rfq   RFQ    @relation(fields: [rfqId], references: [id])
+
+    // The bid that caused this extension
+    triggeringBidId String @unique
+    triggeringBid   Bid    @relation(fields: [triggeringBidId], references: [id])
+
+    // Why it extended
+    triggerType ExtensionTriggerType
+
+    // Time before and after extension — for activity log display
+    previousCloseTime DateTime
+    newCloseTime      DateTime
+
+    // newCloseTime is always capped at forcedCloseTime
+    // newCloseTime = MIN(previousCloseTime + extensionDurationMins, forcedCloseTime)
+
+    createdAt DateTime @default(now())
+
+    @@index([rfqId])
+}
+
+// ============================================================
+// ACTIVITY LOG
+// Human-readable log shown on the Auction Details page.
+// Every significant event is recorded here.
+// Supplier names are censored here too for consistency.
+// ============================================================
+
+model ActivityLog {
+    id    String @id @default(uuid())
+    rfqId String
+    rfq   RFQ    @relation(fields: [rfqId], references: [id])
+
+    activityType ActivityType
+
+    // Human readable description of what happened
+    // e.g. "Bid submitted by S***r A — Total: $950"
+    // e.g. "Auction extended by 5 mins (L1 changed). New close: 6:05 PM"
+    // e.g. "Auction force closed at 6:30 PM"
+    description String
+
+    // Optional: link to the bid that caused this activity
+    bidId String?
+
+    // Optional: link to the extension that caused this activity
+    extensionId String?
+
+    // Server timestamp — always use server time, never client time
+    occurredAt DateTime @default(now())
+
+    @@index([rfqId, occurredAt])
 }
