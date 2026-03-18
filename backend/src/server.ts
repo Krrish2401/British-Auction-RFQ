@@ -6,7 +6,7 @@ let isShuttingDown = false;
 
 async function startServer(): Promise<void> {
     await prisma.$connect();
-    console.log("Connected to PostgreSQL (Neon).");
+    console.log("Connected to Database.");
 
     const server = app.listen(env.port, () => {
         console.log(`Server running on port ${env.port}`);
