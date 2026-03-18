@@ -45,11 +45,11 @@ export default function RegisterPage() {
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-            <form onSubmit={handleSubmit} className="w-full max-w-md rounded-lg bg-white p-6 shadow">
-                <h1 className="mb-4 text-2xl font-semibold text-slate-900">Register</h1>
+        <main className="theme-page-bg theme-text flex min-h-screen items-center justify-center px-4">
+            <form onSubmit={handleSubmit} className="theme-surface theme-shadow-soft w-full max-w-md rounded-lg p-6">
+                <h1 className="theme-text mb-4 text-2xl font-semibold">Register</h1>
 
-                <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="name">
+                <label className="theme-text-muted mb-2 block text-sm font-medium" htmlFor="name">
                     Name
                 </label>
                 <input
@@ -58,10 +58,10 @@ export default function RegisterPage() {
                     required
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="theme-surface-soft theme-border theme-text mb-4 w-full rounded-md border px-3 py-2 outline-none"
                 />
 
-                <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="email">
+                <label className="theme-text-muted mb-2 block text-sm font-medium" htmlFor="email">
                     Email
                 </label>
                 <input
@@ -70,10 +70,10 @@ export default function RegisterPage() {
                     required
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="theme-surface-soft theme-border theme-text mb-4 w-full rounded-md border px-3 py-2 outline-none"
                 />
 
-                <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="password">
+                <label className="theme-text-muted mb-2 block text-sm font-medium" htmlFor="password">
                     Password
                 </label>
                 <input
@@ -82,17 +82,17 @@ export default function RegisterPage() {
                     required
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="theme-surface-soft theme-border theme-text mb-4 w-full rounded-md border px-3 py-2 outline-none"
                 />
 
-                <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="role">
+                <label className="theme-text-muted mb-2 block text-sm font-medium" htmlFor="role">
                     Role
                 </label>
                 <select
                     id="role"
                     value={role}
                     onChange={(event) => setRole(event.target.value as "BUYER" | "SUPPLIER")}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="theme-surface-soft theme-border theme-text mb-4 w-full rounded-md border px-3 py-2 outline-none"
                 >
                     <option value="BUYER">I am a Buyer</option>
                     <option value="SUPPLIER">I am a Supplier</option>
@@ -103,14 +103,14 @@ export default function RegisterPage() {
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+                    className="theme-accent-bg w-full rounded-md px-4 py-2 font-semibold disabled:opacity-60"
                 >
                     {isSubmitting ? "Creating account..." : "Register"}
                 </button>
 
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="theme-text-muted mt-4 text-sm">
                     Already have an account?{" "}
-                    <Link className="font-medium text-slate-900 underline" href="/login">
+                    <Link className="theme-text font-medium underline" href="/login">
                         Login here
                     </Link>
                 </p>

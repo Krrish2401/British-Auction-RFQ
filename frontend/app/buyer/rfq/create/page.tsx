@@ -114,21 +114,21 @@ export default function CreateRFQPage() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
-            <div className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow">
-                <h1 className="mb-6 text-2xl font-semibold text-slate-900">Create RFQ</h1>
+        <main className="theme-page-bg theme-text min-h-screen p-6">
+            <div className="theme-surface theme-shadow-soft mx-auto max-w-3xl rounded-lg p-6">
+                <h1 className="theme-text mb-6 text-2xl font-semibold">Create RFQ</h1>
 
                 {formError ? <p className="mb-4 text-sm text-red-600">{formError}</p> : null}
 
                 <form onSubmit={handleSubmit} className="grid gap-4">
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">RFQ Name</label>
+                        <label className="theme-text-muted mb-1 block text-sm font-medium">RFQ Name</label>
                         <input
                             type="text"
                             required
                             value={name}
                             onChange={(event) => setName(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
+                            className="theme-surface-soft theme-border theme-text w-full rounded-md border px-3 py-2"
                         />
                         {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
                     </div>
@@ -226,7 +226,7 @@ export default function CreateRFQPage() {
                     <button
                         type="submit"
                         disabled={!canSubmit}
-                        className="mt-2 rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-60"
+                        className="theme-accent-bg mt-2 rounded-md px-4 py-2 font-semibold disabled:opacity-60"
                     >
                         {isSubmitting ? "Creating..." : "Create RFQ"}
                     </button>

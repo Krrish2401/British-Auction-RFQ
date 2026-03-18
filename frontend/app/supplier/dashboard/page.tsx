@@ -56,14 +56,14 @@ export default function SupplierDashboardPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
-            <div className="mx-auto max-w-6xl rounded-lg bg-white p-6 shadow">
+        <main className="theme-page-bg theme-text min-h-screen p-6">
+            <div className="theme-surface theme-shadow-soft mx-auto max-w-6xl rounded-lg p-6">
                 <div className="mb-4 flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold text-slate-900">Supplier Dashboard</h1>
+                    <h1 className="theme-text text-2xl font-semibold">Supplier Dashboard</h1>
                     <button
                         type="button"
                         onClick={handleLogout}
-                        className="rounded-md bg-slate-900 px-4 py-2 text-white"
+                        className="theme-accent-bg rounded-md px-4 py-2 font-semibold"
                     >
                         Logout
                     </button>
@@ -72,12 +72,12 @@ export default function SupplierDashboardPage() {
                 {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
 
                 {isFetching ? (
-                    <p className="text-slate-600">Loading RFQs...</p>
+                    <p className="theme-text-muted">Loading RFQs...</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full border-collapse text-left text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 text-slate-700">
+                                <tr className="theme-border theme-text-muted border-b">
                                     <th className="px-3 py-2">RFQ Name</th>
                                     <th className="px-3 py-2">Reference ID</th>
                                     <th className="px-3 py-2">Current Lowest Bid</th>
@@ -91,7 +91,7 @@ export default function SupplierDashboardPage() {
                                 {rfqs.map((rfq) => (
                                     <tr
                                         key={rfq.id}
-                                        className="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
+                                        className="theme-border cursor-pointer border-b hover:opacity-75"
                                         onClick={() => router.push(`/supplier/rfq/${rfq.id}`)}
                                     >
                                         <td className="px-3 py-3">{rfq.name}</td>
@@ -107,7 +107,7 @@ export default function SupplierDashboardPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {rfqs.length === 0 ? <p className="py-6 text-slate-600">No active RFQs right now.</p> : null}
+                        {rfqs.length === 0 ? <p className="theme-text-muted py-6">No active RFQs right now.</p> : null}
                     </div>
                 )}
             </div>

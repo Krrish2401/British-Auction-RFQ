@@ -112,9 +112,9 @@ export default function BuyerRFQDetailPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
-            <div className="mx-auto max-w-6xl space-y-4 rounded-lg bg-white p-6 shadow">
-                <button type="button" onClick={() => router.push("/buyer/dashboard")} className="text-sm text-blue-700">
+        <main className="theme-page-bg theme-text min-h-screen p-6">
+            <div className="theme-surface theme-shadow-soft mx-auto max-w-6xl space-y-4 rounded-lg p-6">
+                <button type="button" onClick={() => router.push("/buyer/dashboard")} className="theme-accent-hover text-sm font-medium">
                     Back to dashboard
                 </button>
 
@@ -122,7 +122,7 @@ export default function BuyerRFQDetailPage() {
                     <button
                         type="button"
                         onClick={handleLogout}
-                        className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
+                        className="theme-accent-bg rounded-md px-4 py-2 text-sm font-semibold"
                     >
                         Logout
                     </button>
@@ -130,13 +130,13 @@ export default function BuyerRFQDetailPage() {
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold text-slate-900">{rfq.name}</h1>
-                        <p className="text-sm text-slate-600">{rfq.referenceId}</p>
+                        <h1 className="theme-text text-2xl font-semibold">{rfq.name}</h1>
+                        <p className="theme-text-muted text-sm">{rfq.referenceId}</p>
                     </div>
                     <StatusBadge status={rfq.status} />
                 </div>
 
-                <div className="grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                <div className="theme-text-muted grid gap-2 text-sm md:grid-cols-2">
                     <p>Original Bid Close Time: {new Date(rfq.originalBidCloseTime).toLocaleString()}</p>
                     <p>Current Bid Close Time: {new Date(rfq.bidCloseTime).toLocaleString()}</p>
                     <p>Forced Close Time: {new Date(rfq.forcedCloseTime).toLocaleString()}</p>
@@ -144,7 +144,7 @@ export default function BuyerRFQDetailPage() {
                 </div>
 
                 {rfq.auctionConfig ? (
-                    <div className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700">
+                    <div className="theme-surface-soft theme-border theme-text-muted rounded-lg border p-3 text-sm">
                         <p>Trigger Type: {rfq.auctionConfig.triggerType}</p>
                         <p>Trigger Window (X): {rfq.auctionConfig.triggerWindowMins} mins</p>
                         <p>Extension Duration (Y): {rfq.auctionConfig.extensionDurationMins} mins</p>

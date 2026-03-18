@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { listRFQs, type RFQSummary } from "../../../lib/api";
+import { StatusBadge } from "../../../components/StatusBadge";
 import { useAuth } from "../../../lib/auth-context";
 import { useRequireAuth } from "../../../lib/use-require-auth";
 
@@ -24,19 +25,8 @@ function statusLabel(status: RFQSummary["status"]): string {
 }
 
 function statusClass(status: RFQSummary["status"]): string {
-    if (status === "DRAFT") {
-        return "bg-slate-200 text-slate-800";
-    }
-
-    if (status === "ACTIVE") {
-        return "bg-emerald-100 text-emerald-800";
-    }
-
-    if (status === "FORCE_CLOSED") {
-        return "bg-rose-100 text-rose-800";
-    }
-
-    return "bg-amber-100 text-amber-800";
+    // StatusBadge component now handles all status styling
+    return "";
 }
 
 function formatCurrency(value: number | null): string {
@@ -87,22 +77,22 @@ export default function BuyerDashboardPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 p-6">
-            <div className="mx-auto max-w-6xl rounded-lg bg-white p-6 shadow">
+        <main className="theme-page-bg theme-text min-h-screen p-6">
+            <div className="theme-surface theme-shadow-soft mx-auto max-w-6xl rounded-lg p-6">
                 <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold text-slate-900">Buyer Dashboard</h1>
+                    <h1 className="theme-text text-2xl font-semibold">Buyer Dashboard</h1>
                     <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={() => router.push("/buyer/rfq/create")}
-                            className="rounded-md bg-blue-700 px-4 py-2 text-white"
+                            className="theme-accent-bg rounded-md px-4 py-2 font-semibold"
                         >
                             Create New RFQ
                         </button>
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="rounded-md bg-slate-900 px-4 py-2 text-white"
+                            className="theme-accent-bg rounded-md px-4 py-2 font-semibold"
                         >
                             Logout
                         </button>
@@ -112,12 +102,12 @@ export default function BuyerDashboardPage() {
                 {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
 
                 {isFetching ? (
-                    <p className="text-slate-600">Loading RFQs...</p>
+                    <p className="theme-text-muted">Loading RFQs...</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full border-collapse text-left text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 text-slate-700">
+                                <tr className="theme-border theme-text-muted border-b">
                                     <th className="px-3 py-2">RFQ Name</th>
                                     <th className="px-3 py-2">Reference ID</th>
                                     <th className="px-3 py-2">Current Lowest Bid</th>
@@ -131,7 +121,7 @@ export default function BuyerDashboardPage() {
                                 {rfqs.map((rfq) => (
                                     <tr
                                         key={rfq.id}
-                                        className="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
+                                        className="theme-border cursor-pointer border-b hover:opacity-75"
                                         onClick={() => router.push(`/buyer/rfq/${rfq.id}`)}
                                     >
                                         <td className="px-3 py-3">{rfq.name}</td>
@@ -140,16 +130,14 @@ export default function BuyerDashboardPage() {
                                         <td className="px-3 py-3">{new Date(rfq.bidCloseTime).toLocaleString()}</td>
                                         <td className="px-3 py-3">{new Date(rfq.forcedCloseTime).toLocaleString()}</td>
                                         <td className="px-3 py-3">
-                                            <span className={`rounded-full px-2 py-1 text-xs font-medium ${statusClass(rfq.status)}`}>
-                                                {statusLabel(rfq.status)}
-                                            </span>
+                                            <StatusBadge status={rfq.status} />
                                         </td>
                                         <td className="px-3 py-3">{rfq.totalBidCount}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        {rfqs.length === 0 ? <p className="py-6 text-slate-600">No RFQs created yet.</p> : null}
+                        {rfqs.length === 0 ? <p className="theme-text-muted py-6">No RFQs created yet.</p> : null}
                     </div>
                 )}
             </div>
