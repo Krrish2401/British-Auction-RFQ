@@ -1,6 +1,5 @@
 import { AuctionStatus, Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
-
 import {
     activateAuctionIfDue,
     closeAuctionIfDue,

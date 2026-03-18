@@ -14,15 +14,13 @@ export function ActivityLog({ logs }: { logs: ActivityLogEntry[] }) {
     const displayedLogs = isExpanded ? logs : logs.slice(0, 5);
 
     return (
-        <div className="rounded-xl" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+        <div className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface-strong)", boxShadow: "var(--shadow-soft)" }}>
             <div className="flex items-center gap-2 px-5 py-4" style={{ borderBottom: logs.length > 0 ? "1px solid var(--border)" : "none" }}>
                 <Activity size={16} style={{ color: "var(--accent)" }} />
-                <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
                     Activity Log
                 </h3>
-                <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      style={{ background: "var(--surface-soft)", color: "var(--muted-foreground)" }}
-                >
+                <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "var(--surface-soft)", color: "var(--muted-foreground)" }}>
                     {logs.length}
                 </span>
             </div>
@@ -35,27 +33,30 @@ export function ActivityLog({ logs }: { logs: ActivityLogEntry[] }) {
                 <div className="max-h-80 overflow-y-auto">
                     <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                         {displayedLogs.map((log) => (
-                            <div key={log.id} className="px-5 py-3 transition-colors duration-150"
-                                 style={{ borderColor: "var(--border)" }}
-                            >
-                                <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>
+                            <div key={log.id} className="px-5 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--muted-foreground)" }}>
                                     {new Date(log.occurredAt).toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-sm" style={{ color: "var(--foreground)" }}>{log.description}</p>
+                                <p className="mt-1 text-sm" style={{ color: "var(--foreground)" }}>{log.description}</p>
                             </div>
                         ))}
                     </div>
+
                     {logs.length > 5 && (
                         <button
                             type="button"
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="flex w-full items-center justify-center gap-1 px-5 py-3 text-xs font-semibold transition-colors"
+                            className="flex w-full items-center justify-center gap-1 px-5 py-3 text-xs font-semibold"
                             style={{ color: "var(--accent)", borderTop: "1px solid var(--border)" }}
                         >
                             {isExpanded ? (
-                                <>Show Less <ChevronUp size={14} /></>
+                                <>
+                                    Show Less <ChevronUp size={14} />
+                                </>
                             ) : (
-                                <>Show All ({logs.length}) <ChevronDown size={14} /></>
+                                <>
+                                    Show All ({logs.length}) <ChevronDown size={14} />
+                                </>
                             )}
                         </button>
                     )}

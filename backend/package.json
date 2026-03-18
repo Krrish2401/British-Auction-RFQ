@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate dev --name init_dummy_schema",
     "prisma:studio": "prisma studio"
   },
   "keywords": [],

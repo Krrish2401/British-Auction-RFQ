@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock3 } from "lucide-react";
 
 function splitTime(ms: number): { hours: string; minutes: string; seconds: string } {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -48,32 +48,37 @@ export function CountdownTimer({
 
     if (timeLeft <= 0) {
         return (
-            <div className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: "var(--danger-soft)" }}>
-                <Clock size={16} style={{ color: "var(--danger)" }} />
+            <div className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5" style={{ borderColor: "var(--danger)", background: "var(--danger-soft)" }}>
+                <Clock3 size={16} style={{ color: "var(--danger)" }} />
                 <span className="text-sm font-semibold" style={{ color: "var(--danger)" }}>Auction Closed</span>
             </div>
         );
     }
 
     const { hours, minutes, seconds } = splitTime(timeLeft);
-    const isUrgent = timeLeft < 300000; // less than 5 min
+    const isUrgent = timeLeft < 300000;
 
     return (
-        <div className="inline-flex items-center gap-3 rounded-xl px-4 py-2.5"
-             style={{ background: isUrgent ? "var(--danger-soft)" : "var(--surface-soft)", border: "1px solid var(--border)" }}
+        <div
+            className="inline-flex items-center gap-3 rounded-xl border px-4 py-2.5"
+            style={{
+                background: isUrgent ? "var(--danger-soft)" : "var(--surface-soft)",
+                borderColor: isUrgent ? "var(--danger)" : "var(--border)",
+            }}
         >
-            <Clock size={16} style={{ color: isUrgent ? "var(--danger)" : "var(--accent)" }} />
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>
+            <Clock3 size={16} style={{ color: isUrgent ? "var(--danger)" : "var(--accent)" }} />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted-foreground)" }}>
                 Time Left
             </span>
             <div className="flex items-center gap-1">
                 {[hours, minutes, seconds].map((val, i) => (
                     <span key={i} className="flex items-center gap-1">
-                        <span className="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-1.5 text-sm font-bold tabular-nums"
-                              style={{
-                                  background: isUrgent ? "var(--danger)" : "var(--accent)",
-                                  color: "var(--accent-contrast)",
-                              }}
+                        <span
+                            className="inline-flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 text-sm font-bold tabular-nums"
+                            style={{
+                                background: isUrgent ? "var(--danger)" : "linear-gradient(130deg, var(--accent), var(--accent-alt))",
+                                color: "var(--accent-contrast)",
+                            }}
                         >
                             {val}
                         </span>

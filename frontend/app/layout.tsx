@@ -5,8 +5,13 @@ import ThemeToggle from "../components/ThemeToggle";
 import { ThemeProvider } from "../lib/theme-context";
 
 export const metadata: Metadata = {
-    title: "RFQ Auction — Transparent Reverse Auction Platform",
-    description: "Run fast, fair freight auctions with live rank clarity. The premier reverse-auction platform for transparent procurement.",
+    title: "Quote Arena — Transparent Procurement Platform",
+    description: "Run fast, fair procurement rounds with live rank clarity on Quote Arena.",
+    icons: {
+        icon: "/favicon.svg",
+        shortcut: "/favicon.svg",
+        apple: "/favicon.svg",
+    },
 };
 
 export default function RootLayout({

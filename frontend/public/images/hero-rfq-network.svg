@@ -1,0 +1,68 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="170" y1="120" x2="1320" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091125"/>
+      <stop offset="0.52" stop-color="#102247"/>
+      <stop offset="1" stop-color="#0A162D"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(280 210) rotate(29) scale(520 420)">
+      <stop stop-color="#5B8DFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#5B8DFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1220 760) rotate(-27) scale(620 460)">
+      <stop stop-color="#2DE2CF" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#2DE2CF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="980" rx="24" fill="url(#bg)"/>
+  <rect width="1600" height="980" rx="24" fill="url(#glowA)"/>
+  <rect width="1600" height="980" rx="24" fill="url(#glowB)"/>
+
+  <g opacity="0.22" stroke="#9CB7FF" stroke-width="1">
+    <path d="M70 80H1530"/>
+    <path d="M70 170H1530"/>
+    <path d="M70 260H1530"/>
+    <path d="M70 350H1530"/>
+    <path d="M70 440H1530"/>
+    <path d="M70 530H1530"/>
+    <path d="M70 620H1530"/>
+    <path d="M70 710H1530"/>
+    <path d="M70 800H1530"/>
+    <path d="M70 890H1530"/>
+    <path d="M110 40V940"/>
+    <path d="M250 40V940"/>
+    <path d="M390 40V940"/>
+    <path d="M530 40V940"/>
+    <path d="M670 40V940"/>
+    <path d="M810 40V940"/>
+    <path d="M950 40V940"/>
+    <path d="M1090 40V940"/>
+    <path d="M1230 40V940"/>
+    <path d="M1370 40V940"/>
+  </g>
+
+  <g opacity="0.94">
+    <circle cx="370" cy="290" r="76" fill="#102247" stroke="#5B8DFF" stroke-width="2"/>
+    <circle cx="790" cy="180" r="64" fill="#102247" stroke="#2DE2CF" stroke-width="2"/>
+    <circle cx="1180" cy="350" r="82" fill="#102247" stroke="#5B8DFF" stroke-width="2"/>
+    <circle cx="520" cy="640" r="92" fill="#102247" stroke="#2DE2CF" stroke-width="2"/>
+    <circle cx="1010" cy="730" r="74" fill="#102247" stroke="#5B8DFF" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.6" stroke-width="3">
+    <path d="M370 290L790 180" stroke="#5B8DFF"/>
+    <path d="M790 180L1180 350" stroke="#2DE2CF"/>
+    <path d="M370 290L520 640" stroke="#2DE2CF"/>
+    <path d="M520 640L1010 730" stroke="#5B8DFF"/>
+    <path d="M1180 350L1010 730" stroke="#2DE2CF"/>
+  </g>
+
+  <g fill="#EAF2FF" font-family="Arial, sans-serif" font-weight="700" font-size="30" text-anchor="middle">
+    <text x="370" y="300">RFQ</text>
+    <text x="790" y="190">Buyer</text>
+    <text x="1180" y="360">Supplier</text>
+    <text x="520" y="650">Bid</text>
+    <text x="1010" y="740">Rank</text>
+  </g>
+</svg>

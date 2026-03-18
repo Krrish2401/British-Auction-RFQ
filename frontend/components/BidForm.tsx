@@ -63,8 +63,7 @@ export function BidForm({
     };
 
     return (
-        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-            {/* Header */}
+        <div className="rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--surface-strong)", boxShadow: "var(--shadow-soft)" }}>
             <button
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -73,7 +72,7 @@ export function BidForm({
             >
                 <div className="flex items-center gap-2">
                     <Send size={16} style={{ color: "var(--accent)" }} />
-                    <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}>
+                    <h3 className="text-base" style={{ fontFamily: "var(--font-heading)", letterSpacing: "0.04em", color: "var(--foreground)" }}>
                         {disabled ? "Bidding Closed" : "Submit Bid"}
                     </h3>
                 </div>
@@ -190,23 +189,22 @@ export function BidForm({
                                 </div>
                             </div>
 
-                            {/* Total + Submit */}
                             <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-                                <div className="rounded-xl px-4 py-2" style={{ background: "var(--surface-soft)", border: "1px solid var(--border)" }}>
-                                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Total: </span>
-                                    <span className="text-lg font-bold" style={{ color: "var(--accent)", fontFamily: "var(--font-heading)" }}>
-                                        ${totalAmount.toFixed(2)}
+                                <div className="rounded-xl border px-4 py-2" style={{ borderColor: "var(--border)", background: "var(--surface-soft)" }}>
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted-foreground)" }}>
+                                        Total Bid
                                     </span>
+                                    <p className="text-2xl leading-none" style={{ fontFamily: "var(--font-heading)", color: "var(--accent)" }}>
+                                        ${totalAmount.toFixed(2)}
+                                    </p>
                                 </div>
 
                                 {error && <p className="theme-error">{error}</p>}
 
-                                <button
-                                    type="submit"
-                                    disabled={disabled || isSubmitting}
-                                    className="theme-btn-primary"
-                                >
-                                    {disabled ? "Bidding Closed" : isSubmitting ? (
+                                <button type="submit" disabled={disabled || isSubmitting} className="theme-btn-primary">
+                                    {disabled ? (
+                                        "Bidding Closed"
+                                    ) : isSubmitting ? (
                                         <span className="flex items-center gap-2">
                                             <div className="h-4 w-4 animate-spin rounded-full border-2" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "white" }} />
                                             Submitting...

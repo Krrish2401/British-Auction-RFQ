@@ -1,38 +1,40 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Zap, Shield, Clock } from "lucide-react";
+import { ShieldCheck, TimerReset, LineChart } from "lucide-react";
 
 export function Footer() {
     return (
-        <footer style={{ background: "var(--background-secondary)", borderTop: "1px solid var(--border)" }}>
+        <footer style={{ borderTop: "1px solid var(--border)", background: "var(--background-secondary)" }}>
             <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
                 <div className="grid gap-12 md:grid-cols-4">
-                    {/* Brand */}
                     <div className="md:col-span-1">
-                        <div className="flex items-center gap-2.5 mb-4">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "var(--accent)" }}>
-                                <span className="text-sm font-bold" style={{ color: "var(--accent-contrast)" }}>R</span>
+                        <div className="mb-4 flex items-center gap-2.5">
+                            <Image src="/logo.png" alt="Quote Arena logo" width={32} height={32} className="h-8 w-8 object-contain" />
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--muted-foreground)" }}>
+                                    Quote Arena
+                                </p>
+                                <p className="text-base" style={{ fontFamily: "var(--font-heading)", lineHeight: "0.9", color: "var(--foreground)" }}>
+                                    Procurement Platform
+                                </p>
                             </div>
-                            <span className="text-base font-bold" style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}>
-                                RFQ AUCTION
-                            </span>
                         </div>
                         <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                            The premier reverse-auction platform for transparent, fair procurement.
+                            Built for transparent sourcing where suppliers compete in real time and buyers close with confidence.
                         </p>
                     </div>
 
-                    {/* Features */}
                     <div>
-                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)", fontFamily: "var(--font-body)" }}>
-                            Features
+                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted-foreground)" }}>
+                            Core Capabilities
                         </h4>
                         <ul className="space-y-2.5">
                             {[
-                                { icon: Zap, text: "Real-time Bidding" },
-                                { icon: Shield, text: "Fair Extensions" },
-                                { icon: Clock, text: "Live Countdown" },
+                                { icon: LineChart, text: "Live ranking board" },
+                                { icon: TimerReset, text: "Auto extension logic" },
+                                { icon: ShieldCheck, text: "Role-safe visibility" },
                             ].map((item) => (
                                 <li key={item.text} className="flex items-center gap-2 text-sm" style={{ color: "var(--muted-foreground)" }}>
                                     <item.icon size={14} style={{ color: "var(--accent)" }} />
@@ -42,22 +44,17 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Quick Links */}
                     <div>
-                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)", fontFamily: "var(--font-body)" }}>
-                            Quick Links
+                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted-foreground)" }}>
+                            Entry Points
                         </h4>
                         <ul className="space-y-2.5">
                             {[
                                 { label: "Sign In", href: "/login" },
-                                { label: "Register", href: "/register" },
+                                { label: "Create Account", href: "/register" },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link
-                                        href={link.href}
-                                        className="text-sm transition-colors duration-200 hover:underline"
-                                        style={{ color: "var(--muted-foreground)" }}
-                                    >
+                                    <Link href={link.href} className="text-sm transition-colors hover:underline" style={{ color: "var(--muted-foreground)" }}>
                                         {link.label}
                                     </Link>
                                 </li>
@@ -65,35 +62,25 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Legal */}
                     <div>
-                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--muted-foreground)", fontFamily: "var(--font-body)" }}>
-                            Legal
+                        <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--muted-foreground)" }}>
+                            Platform Notes
                         </h4>
-                        <ul className="space-y-2.5">
-                            {["Privacy Policy", "Terms of Service", "Cookie Policy"].map((item) => (
-                                <li key={item}>
-                                    <span className="text-sm cursor-pointer transition-colors duration-200 hover:underline" style={{ color: "var(--muted-foreground)" }}>
-                                        {item}
-                                    </span>
-                                </li>
-                            ))}
+                        <ul className="space-y-2.5 text-sm" style={{ color: "var(--muted-foreground)" }}>
+                            <li>Bid history is immutable</li>
+                            <li>Server-time synchronized countdowns</li>
+                            <li>Transparent extension activity log</li>
                         </ul>
                     </div>
                 </div>
 
-                {/* Bottom bar */}
-                <div className="mt-12 flex flex-col items-center justify-between gap-4 pt-8 sm:flex-row"
-                     style={{ borderTop: "1px solid var(--border)" }}
-                >
+                <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row" style={{ borderColor: "var(--border)" }}>
                     <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                        © 2026 RFQ Auction. All rights reserved.
+                        © 2026 Quote Arena. All rights reserved.
                     </p>
-                    <div className="flex gap-4">
-                        <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                            Built for transparent procurement
-                        </span>
-                    </div>
+                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        Procurement clarity by design
+                    </p>
                 </div>
             </div>
         </footer>

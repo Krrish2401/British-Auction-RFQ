@@ -16,8 +16,8 @@ type RankingRow = {
 
 function RankIcon({ rank }: { rank: number }) {
     if (rank === 1) return <Trophy size={14} style={{ color: "var(--warning)" }} />;
-    if (rank === 2) return <Medal size={14} style={{ color: "var(--muted-foreground)" }} />;
-    if (rank === 3) return <Medal size={14} style={{ color: "#CD7F32" }} />;
+    if (rank === 2) return <Medal size={14} style={{ color: "var(--accent-light)" }} />;
+    if (rank === 3) return <Medal size={14} style={{ color: "var(--accent-alt)" }} />;
     return null;
 }
 
@@ -32,25 +32,25 @@ export function RankingsTable({
 }) {
     if (rankings.length === 0) {
         return (
-            <div className="rounded-xl py-8 text-center" style={{ background: "var(--surface-soft)", border: "1px solid var(--border)" }}>
+            <div className="rounded-xl border py-8 text-center" style={{ borderColor: "var(--border)", background: "var(--surface-soft)" }}>
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{emptyMessage}</p>
             </div>
         );
     }
 
     return (
-        <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--border)" }}>
+        <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface-strong)", boxShadow: "var(--shadow-soft)" }}>
             <table className="min-w-full text-left text-sm">
                 <thead>
                     <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--border)" }}>
-                        <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Rank</th>
-                        <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Supplier</th>
-                        <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Total</th>
-                        <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider md:table-cell" style={{ color: "var(--muted-foreground)" }}>Freight</th>
-                        <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider md:table-cell" style={{ color: "var(--muted-foreground)" }}>Origin</th>
-                        <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider md:table-cell" style={{ color: "var(--muted-foreground)" }}>Destination</th>
-                        <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Transit</th>
-                        <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider lg:table-cell" style={{ color: "var(--muted-foreground)" }}>Validity</th>
+                        <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted-foreground)" }}>Rank</th>
+                        <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted-foreground)" }}>Supplier</th>
+                        <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted-foreground)" }}>Total</th>
+                        <th className="hidden px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] md:table-cell" style={{ color: "var(--muted-foreground)" }}>Freight</th>
+                        <th className="hidden px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] md:table-cell" style={{ color: "var(--muted-foreground)" }}>Origin</th>
+                        <th className="hidden px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] md:table-cell" style={{ color: "var(--muted-foreground)" }}>Destination</th>
+                        <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted-foreground)" }}>Transit</th>
+                        <th className="hidden px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] lg:table-cell" style={{ color: "var(--muted-foreground)" }}>Validity</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,7 +59,6 @@ export function RankingsTable({
                         return (
                             <tr
                                 key={`${row.supplierId}-${row.rank}`}
-                                className="transition-colors duration-200"
                                 style={{
                                     borderBottom: "1px solid var(--border)",
                                     background: isCurrentUser ? "var(--accent-glow)" : "transparent",
@@ -74,7 +73,7 @@ export function RankingsTable({
                                 <td className="px-4 py-3 text-sm" style={{ color: "var(--foreground)" }}>
                                     {row.supplierName}
                                     {isCurrentUser && (
-                                        <span className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "var(--accent)", color: "var(--accent-contrast)" }}>
+                                        <span className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "linear-gradient(130deg, var(--accent), var(--accent-alt))", color: "var(--accent-contrast)" }}>
                                             You
                                         </span>
                                     )}
