@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { registerUser } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { setAuthenticatedUser } = useAuth();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,13 +29,14 @@ export default function RegisterPage() {
                 password,
                 role
             });
+            setAuthenticatedUser(user);
 
             if (user.role === "BUYER") {
-                router.push("/buyer/dashboard");
+                router.replace("/buyer/dashboard");
                 return;
             }
 
-            router.push("/supplier/dashboard");
+            router.replace("/supplier/dashboard");
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Registration failed");
         } finally {

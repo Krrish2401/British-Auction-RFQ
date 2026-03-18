@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 
 import { authRouter } from "./routes/auth.routes.js";
+import { bidRouter } from "./routes/bid.routes.js";
 import { rfqRouter } from "./routes/rfq.routes.js";
 
 export const app = express();
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 app.use("/api/rfq", rfqRouter);
+app.use("/api/rfq", bidRouter);
 
 app.use((req, res) => {
     res.status(404).json({

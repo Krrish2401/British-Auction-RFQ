@@ -15,17 +15,17 @@ export function useRequireAuth(expectedRole: "BUYER" | "SUPPLIER") {
         }
 
         if (!user) {
-            router.push("/login");
+            router.replace("/login");
             return;
         }
 
         if (user.role !== expectedRole) {
             if (user.role === "BUYER") {
-                router.push("/buyer/dashboard");
+                router.replace("/buyer/dashboard");
                 return;
             }
 
-            router.push("/supplier/dashboard");
+            router.replace("/supplier/dashboard");
         }
     }, [user, loading, expectedRole, router]);
 

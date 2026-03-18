@@ -8,6 +8,7 @@ type AuthContextValue = {
     user: AuthUser | null;
     loading: boolean;
     refreshUser: () => Promise<void>;
+    setAuthenticatedUser: (nextUser: AuthUser | null) => void;
     logout: () => Promise<void>;
 };
 
@@ -33,6 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
     };
 
+    const setAuthenticatedUser = (nextUser: AuthUser | null): void => {
+        setUser(nextUser);
+        setLoading(false);
+    };
+
     useEffect(() => {
         void refreshUser();
     }, []);
@@ -42,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user,
             loading,
             refreshUser,
+            setAuthenticatedUser,
             logout
         }),
         [user, loading]

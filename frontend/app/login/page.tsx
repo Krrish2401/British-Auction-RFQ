@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { loginUser } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { setAuthenticatedUser } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -20,13 +22,14 @@ export default function LoginPage() {
 
         try {
             const user = await loginUser({ email, password });
+            setAuthenticatedUser(user);
 
             if (user.role === "BUYER") {
-                router.push("/buyer/dashboard");
+                router.replace("/buyer/dashboard");
                 return;
             }
 
-            router.push("/supplier/dashboard");
+            router.replace("/supplier/dashboard");
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Login failed");
         } finally {
@@ -46,9 +49,10 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     required
+                    disabled={isSubmitting}
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600 disabled:bg-slate-100"
                 />
 
                 <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="password">
@@ -58,9 +62,10 @@ export default function LoginPage() {
                     id="password"
                     type="password"
                     required
+                    disabled={isSubmitting}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                    className="mb-4 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600 disabled:bg-slate-100"
                 />
 
                 {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
