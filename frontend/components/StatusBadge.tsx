@@ -1,17 +1,48 @@
 import type { RFQStatus } from "../lib/api";
 
+const statusConfig: Record<RFQStatus, { label: string; bg: string; text: string; dot: string }> = {
+    DRAFT: {
+        label: "Upcoming",
+        bg: "var(--surface-soft)",
+        text: "var(--muted-foreground)",
+        dot: "var(--muted-foreground)",
+    },
+    ACTIVE: {
+        label: "Live",
+        bg: "var(--success-soft)",
+        text: "var(--success)",
+        dot: "var(--success)",
+    },
+    CLOSED: {
+        label: "Closed",
+        bg: "var(--warning-soft)",
+        text: "var(--warning)",
+        dot: "var(--warning)",
+    },
+    FORCE_CLOSED: {
+        label: "Force Closed",
+        bg: "var(--danger-soft)",
+        text: "var(--danger)",
+        dot: "var(--danger)",
+    },
+};
+
 export function StatusBadge({ status }: { status: RFQStatus }) {
-    if (status === "DRAFT") {
-        return <span className="theme-surface-soft rounded-full px-2 py-1 text-xs font-medium">Upcoming</span>;
-    }
+    const config = statusConfig[status];
 
-    if (status === "ACTIVE") {
-        return <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-900">Live</span>;
-    }
-
-    if (status === "FORCE_CLOSED") {
-        return <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-medium text-rose-900">Force Closed</span>;
-    }
-
-    return <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">Closed</span>;
+    return (
+        <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+            style={{ background: config.bg, color: config.text }}
+        >
+            <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{
+                    background: config.dot,
+                    animation: status === "ACTIVE" ? "pulse-glow 2s ease-in-out infinite" : "none",
+                }}
+            />
+            {config.label}
+        </span>
+    );
 }

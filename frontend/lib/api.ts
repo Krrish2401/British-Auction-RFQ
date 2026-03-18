@@ -7,6 +7,8 @@ export type AuthUser = {
 
 type ApiFetchOptions = Omit<RequestInit, "credentials">;
 
+let serverTimeOffsetMs = 0;
+
 type ApiErrorPayload = {
     error?: string;
     message?: string;
@@ -177,7 +179,30 @@ export type BidsListItem = {
     };
 };
 
+export type BidsListResponse = {
+    items: BidsListItem[];
+    nextCursor: string | null;
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+function syncServerTimeOffset(response: Response): void {
+    const serverDateHeader = response.headers.get("date");
+    if (!serverDateHeader) {
+        return;
+    }
+
+    const serverMs = new Date(serverDateHeader).getTime();
+    if (Number.isNaN(serverMs)) {
+        return;
+    }
+
+    serverTimeOffsetMs = serverMs - Date.now();
+}
+
+export function getServerNowMs(): number {
+    return Date.now() + serverTimeOffsetMs;
+}
 
 function toApiError(status: number, payload: ApiErrorPayload): ApiError {
     const message =
@@ -205,6 +230,8 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
             ...(options.headers ?? {})
         }
     });
+
+    syncServerTimeOffset(response);
 
     const contentType = response.headers.get("content-type") ?? "";
     const data: ApiErrorPayload | T = contentType.includes("application/json") ? await response.json() : {};
@@ -255,8 +282,19 @@ export function getRFQ(rfqId: string): Promise<RFQDetails> {
     return apiFetch<RFQDetails>(`/api/rfq/${rfqId}`);
 }
 
-export function getBids(rfqId: string): Promise<BidsListItem[]> {
-    return apiFetch<BidsListItem[]>(`/api/rfq/${rfqId}/bids`);
+export function getBids(rfqId: string, options?: { limit?: number; cursor?: string }): Promise<BidsListResponse> {
+    const params = new URLSearchParams();
+
+    if (options?.limit !== undefined) {
+        params.set("limit", String(options.limit));
+    }
+
+    if (options?.cursor) {
+        params.set("cursor", options.cursor);
+    }
+
+    const suffix = params.toString() ? `?${params.toString()}` : "";
+    return apiFetch<BidsListResponse>(`/api/rfq/${rfqId}/bids${suffix}`);
 }
 
 export function submitBid(
@@ -268,3 +306,5 @@ export function submitBid(
         body: JSON.stringify(data)
     });
 }
+
+

@@ -1,5 +1,4 @@
 "use client";
-
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 export type ThemeMode = "light" | "dark" | "system";

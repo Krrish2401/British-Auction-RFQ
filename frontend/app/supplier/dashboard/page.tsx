@@ -2,37 +2,34 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, TrendingDown, Clock, FileText, Activity } from "lucide-react";
 
 import { listRFQs, type RFQSummary } from "../../../lib/api";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { useAuth } from "../../../lib/auth-context";
 import { useRequireAuth } from "../../../lib/use-require-auth";
+import { DashboardShell } from "../../../components/DashboardShell";
 
 function formatCurrency(value: number | null): string {
-    if (value === null) {
-        return "—";
-    }
-
+    if (value === null) return "—";
     return `$${value.toFixed(2)}`;
 }
 
 export default function SupplierDashboardPage() {
     const router = useRouter();
     const { loading, user } = useRequireAuth("SUPPLIER");
-    const { logout } = useAuth();
+    useAuth();
     const [rfqs, setRfqs] = useState<RFQSummary[]>([]);
     const [isFetching, setIsFetching] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (loading || !user || user.role !== "SUPPLIER") {
-            return;
-        }
+        if (loading || !user || user.role !== "SUPPLIER") return;
 
         const load = async () => {
             setIsFetching(true);
             setError("");
-
             try {
                 const data = await listRFQs();
                 setRfqs(data);
@@ -46,71 +43,109 @@ export default function SupplierDashboardPage() {
         void load();
     }, [loading, user]);
 
-    const handleLogout = async () => {
-        await logout();
-        router.push("/login");
-    };
-
     if (loading || !user || user.role !== "SUPPLIER") {
-        return <main className="p-6">Loading...</main>;
+        return (
+            <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--background)" }}>
+                <div className="h-10 w-10 animate-spin rounded-full border-2" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent)" }} />
+            </div>
+        );
     }
 
+    const activeCount = rfqs.filter((r) => r.status === "ACTIVE").length;
+    const totalBids = rfqs.reduce((acc, r) => acc + r.totalBidCount, 0);
+
     return (
-        <main className="theme-page-bg theme-text min-h-screen p-6">
-            <div className="theme-surface theme-shadow-soft mx-auto max-w-6xl rounded-lg p-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <h1 className="theme-text text-2xl font-semibold">Supplier Dashboard</h1>
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="theme-accent-bg rounded-md px-4 py-2 font-semibold"
+        <DashboardShell
+            title="Supplier Dashboard"
+            subtitle={`Welcome back, ${user.name}`}
+        >
+            {error && <p className="theme-error mb-4">{error}</p>}
+
+            {/* Stats cards */}
+            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                    { icon: FileText, label: "Available RFQs", value: rfqs.length, color: "var(--accent)" },
+                    { icon: Activity, label: "Active", value: activeCount, color: "var(--success)" },
+                    { icon: TrendingDown, label: "Total Bids", value: totalBids, color: "var(--warning)" },
+                    { icon: Clock, label: "Closed", value: rfqs.filter((r) => r.status === "CLOSED" || r.status === "FORCE_CLOSED").length, color: "var(--muted-foreground)" },
+                ].map((stat, i) => (
+                    <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 + i * 0.05 }}
+                        className="theme-card p-5"
                     >
-                        Logout
-                    </button>
-                </div>
-
-                {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
-
-                {isFetching ? (
-                    <p className="theme-text-muted">Loading RFQs...</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full border-collapse text-left text-sm">
-                            <thead>
-                                <tr className="theme-border theme-text-muted border-b">
-                                    <th className="px-3 py-2">RFQ Name</th>
-                                    <th className="px-3 py-2">Reference ID</th>
-                                    <th className="px-3 py-2">Current Lowest Bid</th>
-                                    <th className="px-3 py-2">Current Bid Close Time</th>
-                                    <th className="px-3 py-2">Forced Close Time</th>
-                                    <th className="px-3 py-2">Status</th>
-                                    <th className="px-3 py-2">Total Bids</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rfqs.map((rfq) => (
-                                    <tr
-                                        key={rfq.id}
-                                        className="theme-border cursor-pointer border-b hover:opacity-75"
-                                        onClick={() => router.push(`/supplier/rfq/${rfq.id}`)}
-                                    >
-                                        <td className="px-3 py-3">{rfq.name}</td>
-                                        <td className="px-3 py-3">{rfq.referenceId}</td>
-                                        <td className="px-3 py-3">{formatCurrency(rfq.currentLowestBid)}</td>
-                                        <td className="px-3 py-3">{new Date(rfq.bidCloseTime).toLocaleString()}</td>
-                                        <td className="px-3 py-3">{new Date(rfq.forcedCloseTime).toLocaleString()}</td>
-                                        <td className="px-3 py-3">
-                                            <StatusBadge status={rfq.status} />
-                                        </td>
-                                        <td className="px-3 py-3">{rfq.totalBidCount}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {rfqs.length === 0 ? <p className="theme-text-muted py-6">No active RFQs right now.</p> : null}
-                    </div>
-                )}
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "var(--accent-glow)" }}>
+                                <stat.icon size={18} style={{ color: stat.color }} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{stat.label}</p>
+                                <p className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}>{stat.value}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
-        </main>
+
+            {/* RFQ List */}
+            {isFetching ? (
+                <div className="flex items-center justify-center py-16">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent)" }} />
+                </div>
+            ) : rfqs.length === 0 ? (
+                <div className="theme-card py-16 text-center">
+                    <FileText size={40} className="mx-auto mb-4" style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
+                    <p className="text-lg font-semibold" style={{ fontFamily: "var(--font-heading)" }}>No RFQs available</p>
+                    <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Check back later for new auction opportunities.</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {rfqs.map((rfq, i) => (
+                        <motion.div
+                            key={rfq.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 + i * 0.03 }}
+                            onClick={() => router.push(`/supplier/rfq/${rfq.id}`)}
+                            className="theme-card group cursor-pointer p-5"
+                        >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h3 className="text-base font-semibold truncate" style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}>
+                                            {rfq.name}
+                                        </h3>
+                                        <StatusBadge status={rfq.status} />
+                                    </div>
+                                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{rfq.referenceId}</p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-6 text-sm">
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Lowest Bid</p>
+                                        <p className="font-bold" style={{ color: rfq.currentLowestBid ? "var(--accent)" : "var(--muted-foreground)", fontFamily: "var(--font-heading)" }}>
+                                            {formatCurrency(rfq.currentLowestBid)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Close Time</p>
+                                        <p className="text-sm" style={{ color: "var(--foreground)" }}>
+                                            {new Date(rfq.bidCloseTime).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Bids</p>
+                                        <p className="font-bold" style={{ color: "var(--foreground)", fontFamily: "var(--font-heading)" }}>{rfq.totalBidCount}</p>
+                                    </div>
+                                    <ArrowRight size={16} className="hidden sm:block transition-transform group-hover:translate-x-1" style={{ color: "var(--accent)" }} />
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+        </DashboardShell>
     );
 }

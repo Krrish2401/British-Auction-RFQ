@@ -2,16 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowLeft, ArrowRight, FileText, Clock, Settings, Send } from "lucide-react";
 
-import { createRFQ, type CreateRFQRequest, type TriggerType } from "../../../../lib/api";
+import { ApiError, createRFQ, type CreateRFQRequest, type TriggerType } from "../../../../lib/api";
 import { useRequireAuth } from "../../../../lib/use-require-auth";
+import { Navbar } from "../../../../components/Navbar";
 
 type FieldErrors = Partial<Record<keyof CreateRFQRequest, string>>;
 
-const triggerOptions: Array<{ label: string; value: TriggerType }> = [
-    { label: "Any Bid Received", value: "BID_RECEIVED" },
-    { label: "Any Rank Change", value: "ANY_RANK_CHANGE" },
-    { label: "L1 (Lowest Bidder) Change Only", value: "L1_CHANGE_ONLY" }
+const triggerOptions: Array<{ label: string; value: TriggerType; desc: string }> = [
+    { label: "Any Bid Received", value: "BID_RECEIVED", desc: "Extend whenever any bid arrives in the trigger window" },
+    { label: "Any Rank Change", value: "ANY_RANK_CHANGE", desc: "Extend only when supplier rankings change" },
+    { label: "L1 Change Only", value: "L1_CHANGE_ONLY", desc: "Extend only when the lowest bidder changes" },
 ];
 
 function toIsoString(value: string): string {
@@ -20,29 +23,17 @@ function toIsoString(value: string): string {
 
 function mapApiErrors(errors: string[]): FieldErrors {
     const mapped: FieldErrors = {};
-
     for (const error of errors) {
         const lower = error.toLowerCase();
-
-        if (lower.includes("name")) {
-            mapped.name = error;
-        } else if (lower.includes("bidstarttime")) {
-            mapped.bidStartTime = error;
-        } else if (lower.includes("bidclosetime")) {
-            mapped.bidCloseTime = error;
-        } else if (lower.includes("forcedclosetime")) {
-            mapped.forcedCloseTime = error;
-        } else if (lower.includes("pickupdate")) {
-            mapped.pickupDate = error;
-        } else if (lower.includes("triggerwindowmins")) {
-            mapped.triggerWindowMins = error;
-        } else if (lower.includes("extensiondurationmins")) {
-            mapped.extensionDurationMins = error;
-        } else if (lower.includes("triggertype")) {
-            mapped.triggerType = error;
-        }
+        if (lower.includes("name")) mapped.name = error;
+        else if (lower.includes("bidstarttime")) mapped.bidStartTime = error;
+        else if (lower.includes("bidclosetime")) mapped.bidCloseTime = error;
+        else if (lower.includes("forcedclosetime")) mapped.forcedCloseTime = error;
+        else if (lower.includes("pickupdate")) mapped.pickupDate = error;
+        else if (lower.includes("triggerwindowmins")) mapped.triggerWindowMins = error;
+        else if (lower.includes("extensiondurationmins")) mapped.extensionDurationMins = error;
+        else if (lower.includes("triggertype")) mapped.triggerType = error;
     }
-
     return mapped;
 }
 
@@ -50,6 +41,7 @@ export default function CreateRFQPage() {
     const router = useRouter();
     const { user, loading } = useRequireAuth("BUYER");
 
+    const [step, setStep] = useState(1);
     const [name, setName] = useState("");
     const [bidStartTime, setBidStartTime] = useState("");
     const [bidCloseTime, setBidCloseTime] = useState("");
@@ -65,7 +57,11 @@ export default function CreateRFQPage() {
     const canSubmit = useMemo(() => !isSubmitting && !loading && !!user, [isSubmitting, loading, user]);
 
     if (loading || !user || user.role !== "BUYER") {
-        return <main className="p-6">Loading...</main>;
+        return (
+            <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--background)" }}>
+                <div className="h-10 w-10 animate-spin rounded-full border-2" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent)" }} />
+            </div>
+        );
     }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -83,155 +79,249 @@ export default function CreateRFQPage() {
                 pickupDate: toIsoString(pickupDate),
                 triggerWindowMins: Number(triggerWindowMins),
                 extensionDurationMins: Number(extensionDurationMins),
-                triggerType
+                triggerType,
             });
-
             router.push("/buyer/dashboard");
         } catch (error) {
-            if (error instanceof Error) {
-                const message = error.message;
-
-                if (message.startsWith("[") && message.endsWith("]")) {
-                    try {
-                        const parsedErrors = JSON.parse(message) as string[];
-                        setFieldErrors(mapApiErrors(parsedErrors));
-                        setFormError("Please correct the highlighted fields.");
-                        return;
-                    } catch {
-                        setFormError(message);
-                        return;
-                    }
+            if (error instanceof ApiError) {
+                if (error.errors && error.errors.length > 0) {
+                    setFieldErrors(mapApiErrors(error.errors));
+                    setFormError("Please correct the highlighted fields.");
+                    return;
                 }
-
-                setFormError(message);
+                setFormError(error.message);
                 return;
             }
-
             setFormError("Failed to create RFQ");
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    const steps = [
+        { num: 1, label: "Details", icon: FileText },
+        { num: 2, label: "Timing", icon: Clock },
+        { num: 3, label: "Rules", icon: Settings },
+    ];
+
+    const progress = Math.round((step / 3) * 100);
+
     return (
-        <main className="theme-page-bg theme-text min-h-screen p-6">
-            <div className="theme-surface theme-shadow-soft mx-auto max-w-3xl rounded-lg p-6">
-                <h1 className="theme-text mb-6 text-2xl font-semibold">Create RFQ</h1>
+        <div className="min-h-screen" style={{ background: "var(--background)" }}>
+            <Navbar />
 
-                {formError ? <p className="mb-4 text-sm text-red-600">{formError}</p> : null}
+            <div className="mx-auto max-w-2xl px-4 pb-12 pt-24 sm:px-6">
+                {/* Back */}
+                <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    type="button"
+                    onClick={() => step > 1 ? setStep(step - 1) : router.push("/buyer/dashboard")}
+                    className="theme-btn-ghost mb-6 flex items-center gap-1.5 text-sm"
+                >
+                    <ArrowLeft size={14} />
+                    {step > 1 ? "Previous Step" : "Back to Dashboard"}
+                </motion.button>
 
-                <form onSubmit={handleSubmit} className="grid gap-4">
-                    <div>
-                        <label className="theme-text-muted mb-1 block text-sm font-medium">RFQ Name</label>
-                        <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            className="theme-surface-soft theme-border theme-text w-full rounded-md border px-3 py-2"
-                        />
-                        {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
-                    </div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="theme-card overflow-hidden"
+                    style={{ boxShadow: "var(--shadow-soft)" }}
+                >
+                    {/* Progress bar */}
+                    <div className="px-6 pt-6">
+                        <div className="mb-1 flex items-center justify-between">
+                            <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Create RFQ</h1>
+                            <span className="text-xs font-semibold" style={{ color: "var(--muted-foreground)" }}>{progress}% Complete</span>
+                        </div>
+                        <div className="mb-6 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-soft)" }}>
+                            <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: "var(--accent)" }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 0.4 }}
+                            />
+                        </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Bid Start Date and Time</label>
-                        <input
-                            type="datetime-local"
-                            required
-                            value={bidStartTime}
-                            onChange={(event) => setBidStartTime(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.bidStartTime ? <p className="mt-1 text-xs text-red-600">{fieldErrors.bidStartTime}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Bid Close Date and Time</label>
-                        <input
-                            type="datetime-local"
-                            required
-                            value={bidCloseTime}
-                            onChange={(event) => setBidCloseTime(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.bidCloseTime ? <p className="mt-1 text-xs text-red-600">{fieldErrors.bidCloseTime}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Forced Bid Close Date and Time</label>
-                        <input
-                            type="datetime-local"
-                            required
-                            value={forcedCloseTime}
-                            onChange={(event) => setForcedCloseTime(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.forcedCloseTime ? <p className="mt-1 text-xs text-red-600">{fieldErrors.forcedCloseTime}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Pickup / Service Date</label>
-                        <input
-                            type="datetime-local"
-                            required
-                            value={pickupDate}
-                            onChange={(event) => setPickupDate(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.pickupDate ? <p className="mt-1 text-xs text-red-600">{fieldErrors.pickupDate}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Trigger Window in minutes</label>
-                        <input
-                            type="number"
-                            min={1}
-                            required
-                            value={triggerWindowMins}
-                            onChange={(event) => setTriggerWindowMins(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.triggerWindowMins ? <p className="mt-1 text-xs text-red-600">{fieldErrors.triggerWindowMins}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Extension Duration in minutes</label>
-                        <input
-                            type="number"
-                            min={1}
-                            required
-                            value={extensionDurationMins}
-                            onChange={(event) => setExtensionDurationMins(event.target.value)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        />
-                        {fieldErrors.extensionDurationMins ? <p className="mt-1 text-xs text-red-600">{fieldErrors.extensionDurationMins}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-slate-700">Extension Trigger Type</label>
-                        <select
-                            value={triggerType}
-                            onChange={(event) => setTriggerType(event.target.value as TriggerType)}
-                            className="w-full rounded-md border border-slate-300 px-3 py-2"
-                        >
-                            {triggerOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
+                        {/* Step indicators */}
+                        <div className="mb-6 flex items-center gap-3">
+                            {steps.map((s) => (
+                                <button
+                                    key={s.num}
+                                    type="button"
+                                    onClick={() => setStep(s.num)}
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all"
+                                    style={{
+                                        background: step === s.num ? "var(--accent)" : "var(--surface-soft)",
+                                        color: step === s.num ? "var(--accent-contrast)" : "var(--muted-foreground)",
+                                        border: `1px solid ${step === s.num ? "var(--accent)" : "var(--border)"}`,
+                                    }}
+                                >
+                                    <s.icon size={14} />
+                                    {s.label}
+                                </button>
                             ))}
-                        </select>
-                        {fieldErrors.triggerType ? <p className="mt-1 text-xs text-red-600">{fieldErrors.triggerType}</p> : null}
+                        </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={!canSubmit}
-                        className="theme-accent-bg mt-2 rounded-md px-4 py-2 font-semibold disabled:opacity-60"
-                    >
-                        {isSubmitting ? "Creating..." : "Create RFQ"}
-                    </button>
-                </form>
+                    {formError && <p className="theme-error px-6">{formError}</p>}
+
+                    <form onSubmit={handleSubmit} className="px-6 pb-6">
+                        {/* Step 1: Details */}
+                        {step === 1 && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                                <div>
+                                    <label className="theme-label">RFQ Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="theme-input"
+                                        placeholder="e.g., Q1 Freight Services 2026"
+                                    />
+                                    {fieldErrors.name && <p className="theme-error">{fieldErrors.name}</p>}
+                                </div>
+                                <div>
+                                    <label className="theme-label">Pickup / Service Date</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={pickupDate}
+                                        onChange={(e) => setPickupDate(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.pickupDate && <p className="theme-error">{fieldErrors.pickupDate}</p>}
+                                </div>
+                                <button type="button" onClick={() => setStep(2)} className="theme-btn-primary w-full">
+                                    Continue to Timing <ArrowRight size={16} />
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {/* Step 2: Timing */}
+                        {step === 2 && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                                <div>
+                                    <label className="theme-label">Bid Start Date & Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={bidStartTime}
+                                        onChange={(e) => setBidStartTime(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.bidStartTime && <p className="theme-error">{fieldErrors.bidStartTime}</p>}
+                                </div>
+                                <div>
+                                    <label className="theme-label">Bid Close Date & Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={bidCloseTime}
+                                        onChange={(e) => setBidCloseTime(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.bidCloseTime && <p className="theme-error">{fieldErrors.bidCloseTime}</p>}
+                                </div>
+                                <div>
+                                    <label className="theme-label">Forced Close Date & Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={forcedCloseTime}
+                                        onChange={(e) => setForcedCloseTime(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.forcedCloseTime && <p className="theme-error">{fieldErrors.forcedCloseTime}</p>}
+                                </div>
+                                <button type="button" onClick={() => setStep(3)} className="theme-btn-primary w-full">
+                                    Continue to Rules <ArrowRight size={16} />
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {/* Step 3: Rules */}
+                        {step === 3 && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                                <div>
+                                    <label className="theme-label">Trigger Window (minutes)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        required
+                                        value={triggerWindowMins}
+                                        onChange={(e) => setTriggerWindowMins(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.triggerWindowMins && <p className="theme-error">{fieldErrors.triggerWindowMins}</p>}
+                                </div>
+                                <div>
+                                    <label className="theme-label">Extension Duration (minutes)</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        required
+                                        value={extensionDurationMins}
+                                        onChange={(e) => setExtensionDurationMins(e.target.value)}
+                                        className="theme-input"
+                                    />
+                                    {fieldErrors.extensionDurationMins && <p className="theme-error">{fieldErrors.extensionDurationMins}</p>}
+                                </div>
+                                <div>
+                                    <label className="theme-label">Extension Trigger Type</label>
+                                    <div className="space-y-2">
+                                        {triggerOptions.map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setTriggerType(option.value)}
+                                                className="flex w-full items-start gap-3 rounded-xl p-4 text-left transition-all"
+                                                style={{
+                                                    background: triggerType === option.value ? "var(--accent-glow)" : "var(--surface-soft)",
+                                                    border: `1px solid ${triggerType === option.value ? "var(--accent)" : "var(--border)"}`,
+                                                }}
+                                            >
+                                                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                                                     style={{
+                                                         border: `2px solid ${triggerType === option.value ? "var(--accent)" : "var(--border)"}`,
+                                                         background: triggerType === option.value ? "var(--accent)" : "transparent",
+                                                     }}
+                                                >
+                                                    {triggerType === option.value && (
+                                                        <div className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent-contrast)" }} />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{option.label}</p>
+                                                    <p className="mt-0.5 text-xs" style={{ color: "var(--muted-foreground)" }}>{option.desc}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {fieldErrors.triggerType && <p className="theme-error">{fieldErrors.triggerType}</p>}
+                                </div>
+                                <button type="submit" disabled={!canSubmit} className="theme-btn-primary w-full">
+                                    {isSubmitting ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "white" }} />
+                                            Creating...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <Send size={16} />
+                                            Create RFQ
+                                        </span>
+                                    )}
+                                </button>
+                            </motion.div>
+                        )}
+                    </form>
+                </motion.div>
             </div>
-        </main>
+        </div>
     );
 }
