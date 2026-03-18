@@ -6,7 +6,6 @@ import {
     Prisma,
     type PrismaClient
 } from "@prisma/client";
-
 import type { SubmitBidRequestDto } from "../dto/bid.dto.js";
 import { censorName } from "./censor.js";
 import { prisma } from "./prisma.js";
@@ -103,29 +102,24 @@ export async function computeCurrentRankings(rfqId: string, dbClient?: DbClient)
 
 export async function activateAuctionIfDue(rfqId: string, dbClient?: DbClient): Promise<void> {
     const db = resolveDbClient(dbClient);
-    const rfq = await db.rFQ.findUnique({
-        where: { id: rfqId },
-        select: {
-            id: true,
-            status: true,
-            bidStartTime: true
-        }
-    });
+    const now = new Date();
 
-    if (!rfq || rfq.status !== AuctionStatus.DRAFT) {
-        return;
-    }
-
-    if (new Date() < rfq.bidStartTime) {
-        return;
-    }
-
-    await db.rFQ.update({
-        where: { id: rfqId },
+    const result = await db.rFQ.updateMany({
+        where: {
+            id: rfqId,
+            status: AuctionStatus.DRAFT,
+            bidStartTime: {
+                lte: now
+            }
+        },
         data: {
             status: AuctionStatus.ACTIVE
         }
     });
+
+    if (result.count === 0) {
+        return;
+    }
 
     await db.activityLog.create({
         data: {
@@ -138,58 +132,58 @@ export async function activateAuctionIfDue(rfqId: string, dbClient?: DbClient): 
 
 export async function closeAuctionIfDue(rfqId: string, dbClient?: DbClient): Promise<void> {
     const db = resolveDbClient(dbClient);
-    const rfq = await db.rFQ.findUnique({
-        where: { id: rfqId },
-        select: {
-            id: true,
-            status: true,
-            bidCloseTime: true,
-            forcedCloseTime: true
+    const now = new Date();
+
+    const forceClosed = await db.rFQ.updateMany({
+        where: {
+            id: rfqId,
+            status: AuctionStatus.ACTIVE,
+            forcedCloseTime: {
+                lte: now
+            }
+        },
+        data: {
+            status: AuctionStatus.FORCE_CLOSED
         }
     });
 
-    if (!rfq || rfq.status !== AuctionStatus.ACTIVE) {
-        return;
-    }
-
-    const now = new Date();
-
-    if (now >= rfq.forcedCloseTime) {
-        await db.rFQ.update({
-            where: { id: rfqId },
-            data: {
-                status: AuctionStatus.FORCE_CLOSED
-            }
-        });
-
+    if (forceClosed.count > 0) {
         await db.activityLog.create({
             data: {
                 rfqId,
                 activityType: ActivityType.AUCTION_FORCE_CLOSED,
-                description: `Auction force closed at ${rfq.forcedCloseTime.toISOString()}. Hard deadline reached. No further bids accepted.`
+                description: "Auction force closed. Hard deadline reached. No further bids accepted."
             }
         });
         return;
     }
 
-    if (now >= rfq.bidCloseTime) {
-        await db.rFQ.update({
-            where: { id: rfqId },
-            data: {
-                status: AuctionStatus.CLOSED
+    const naturallyClosed = await db.rFQ.updateMany({
+        where: {
+            id: rfqId,
+            status: AuctionStatus.ACTIVE,
+            bidCloseTime: {
+                lte: now
+            },
+            forcedCloseTime: {
+                gt: now
             }
-        });
+        },
+        data: {
+            status: AuctionStatus.CLOSED
+        }
+    });
 
+    if (naturallyClosed.count > 0) {
         await db.activityLog.create({
             data: {
                 rfqId,
                 activityType: ActivityType.AUCTION_CLOSED,
-                description: `Auction closed naturally at ${rfq.bidCloseTime.toISOString()}. No further bids accepted.`
+                description: "Auction closed naturally. No further bids accepted."
             }
         });
     }
 }
-
 export function isWithinTriggerWindow(bidReceivedAt: Date, rfq: RFQWithConfig): boolean {
     if (!rfq.auctionConfig) {
         return false;
@@ -289,7 +283,7 @@ export async function applyExtension(
             rfqId: rfq.id,
             activityType: ActivityType.AUCTION_EXTENDED,
             extensionId: extension.id,
-            description: `Auction extended by ${rfq.auctionConfig.extensionDurationMins} minutes (${reason}). Previous close: ${previousCloseTime.toISOString()}. New close: ${newCloseTime.toISOString()}.`
+            description: `Auction extended by ${rfq.auctionConfig.extensionDurationMins} minutes (${reason}).`
         }
     });
 

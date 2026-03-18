@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
-
 import type { AuthUserResponseDto, LoginRequestDto, RegisterRequestDto } from "../dto/auth.dto.js";
 import { signToken } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";

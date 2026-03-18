@@ -1,11 +1,14 @@
 import { ActivityType, AuctionStatus, Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
-
 import type { CreateRFQRequestDto, RFQListItemDto } from "../dto/rfq.dto.js";
 import { activateAuctionIfDue, closeAuctionIfDue, computeCurrentRankings } from "../lib/auction-engine.js";
 import { censorNameForViewer } from "../lib/censor.js";
 import { prisma } from "../lib/prisma.js";
 import { generateReferenceId, validateRFQInput } from "../lib/validate.js";
+
+const RFQ_DETAIL_BIDS_LIMIT = 500;
+const RFQ_DETAIL_ACTIVITY_LOGS_LIMIT = 300;
+const RFQ_DETAIL_EXTENSIONS_LIMIT = 200;
 
 function toListItem(
     rfq: {
@@ -37,12 +40,12 @@ function toListItem(
     const currentLowestBid =
         rfq.bids.length > 0
             ? rfq.bids.reduce((lowest, bid) => {
-                  if (!lowest || bid.totalAmount.comparedTo(lowest) < 0) {
-                      return bid.totalAmount;
-                  }
+                if (!lowest || bid.totalAmount.comparedTo(lowest) < 0) {
+                    return bid.totalAmount;
+                }
 
-                  return lowest;
-              }, null as Prisma.Decimal | null)
+                return lowest;
+            }, null as Prisma.Decimal | null)
             : null;
 
     return {
@@ -121,7 +124,7 @@ export async function createRFQ(req: Request, res: Response): Promise<void> {
                 data: {
                     rfqId: createdRFQ.id,
                     activityType: ActivityType.AUCTION_OPENED,
-                    description: `RFQ ${createdRFQ.referenceId} created. Auction scheduled to open at ${createdRFQ.bidStartTime.toISOString()}.`
+                    description: `RFQ ${createdRFQ.referenceId} created. Auction scheduled.`
                 }
             });
 
@@ -187,28 +190,77 @@ export async function listRFQs(req: Request, res: Response): Promise<void> {
         return;
     }
 
-    const rfqsToCheck = await prisma.rFQ.findMany({
-        where: {
-            status: {
-                in: [AuctionStatus.DRAFT, AuctionStatus.ACTIVE]
-            }
-        },
-        select: {
-            id: true,
-            status: true
-        }
-    });
+    const now = new Date();
 
-    for (const rfq of rfqsToCheck) {
-        if (rfq.status === AuctionStatus.DRAFT || rfq.status === AuctionStatus.ACTIVE) {
-            await activateAuctionIfDue(rfq.id);
-            await closeAuctionIfDue(rfq.id);
-        }
+    const activatedRfqs = await prisma.$queryRaw<Array<{ id: string }>>`
+        UPDATE "RFQ"
+        SET "status" = ${AuctionStatus.ACTIVE}, "updatedAt" = ${now}
+        WHERE "status" = ${AuctionStatus.DRAFT}
+        AND "bidStartTime" <= ${now}
+        RETURNING "id"
+    `;
+
+    if (activatedRfqs.length > 0) {
+        await prisma.activityLog.createMany({
+            data: activatedRfqs.map((rfq) => ({
+                rfqId: rfq.id,
+                activityType: ActivityType.AUCTION_OPENED,
+                description: "Auction is now live. Bidding is open."
+            }))
+        });
     }
 
-    const activeRfqs = await prisma.rFQ.findMany({
+    const forceClosedRfqs = await prisma.$queryRaw<Array<{ id: string }>>`
+        UPDATE "RFQ"
+        SET "status" = ${AuctionStatus.FORCE_CLOSED}, "updatedAt" = ${now}
+        WHERE "status" = ${AuctionStatus.ACTIVE}
+        AND "forcedCloseTime" <= ${now}
+        RETURNING "id"
+    `;
+
+    if (forceClosedRfqs.length > 0) {
+        await prisma.activityLog.createMany({
+            data: forceClosedRfqs.map((rfq) => ({
+                rfqId: rfq.id,
+                activityType: ActivityType.AUCTION_FORCE_CLOSED,
+                description: "Auction force closed. Hard deadline reached. No further bids accepted."
+            }))
+        });
+    }
+
+    const naturallyClosedRfqs = await prisma.$queryRaw<Array<{ id: string }>>`
+        UPDATE "RFQ"
+        SET "status" = ${AuctionStatus.CLOSED}, "updatedAt" = ${now}
+        WHERE "status" = ${AuctionStatus.ACTIVE}
+        AND "bidCloseTime" <= ${now}
+        AND "forcedCloseTime" > ${now}
+        RETURNING "id"
+    `;
+
+    if (naturallyClosedRfqs.length > 0) {
+        await prisma.activityLog.createMany({
+            data: naturallyClosedRfqs.map((rfq) => ({
+                rfqId: rfq.id,
+                activityType: ActivityType.AUCTION_CLOSED,
+                description: "Auction closed naturally. No further bids accepted."
+            }))
+        });
+    }
+
+    const visibleRfqs = await prisma.rFQ.findMany({
         where: {
-            status: AuctionStatus.ACTIVE
+            OR: [
+                {
+                    status: AuctionStatus.ACTIVE
+                },
+                {
+                    bids: {
+                        some: {
+                            supplierId: req.user.userId
+                        }
+                    }
+                }
+            ]
         },
         include: {
             auctionConfig: true,
@@ -218,12 +270,17 @@ export async function listRFQs(req: Request, res: Response): Promise<void> {
                 }
             }
         },
-        orderBy: {
-            bidCloseTime: "asc"
-        }
+        orderBy: [
+            {
+                status: "asc"
+            },
+            {
+                bidCloseTime: "asc"
+            }
+        ]
     });
 
-    res.status(200).json(activeRfqs.map(toListItem));
+    res.status(200).json(visibleRfqs.map(toListItem));
 }
 
 export async function getRFQ(req: Request, res: Response): Promise<void> {
@@ -243,6 +300,44 @@ export async function getRFQ(req: Request, res: Response): Promise<void> {
     await activateAuctionIfDue(rfqId);
     await closeAuctionIfDue(rfqId);
 
+    const rfqBase = await prisma.rFQ.findUnique({
+        where: {
+            id: rfqId
+        },
+        select: {
+            id: true,
+            buyerId: true,
+            status: true
+        }
+    });
+
+    if (!rfqBase) {
+        res.status(404).json({ error: "RFQ not found" });
+        return;
+    }
+
+    if (req.user.role === "BUYER" && rfqBase.buyerId !== req.user.userId) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+    }
+
+    if (req.user.role === "SUPPLIER" && rfqBase.status !== AuctionStatus.ACTIVE) {
+        const hasParticipated = await prisma.bid.findFirst({
+            where: {
+                rfqId,
+                supplierId: req.user.userId
+            },
+            select: {
+                id: true
+            }
+        });
+
+        if (!hasParticipated) {
+            res.status(403).json({ error: "Forbidden" });
+            return;
+        }
+    }
+
     const rfq = await prisma.rFQ.findUnique({
         where: {
             id: rfqId
@@ -251,13 +346,15 @@ export async function getRFQ(req: Request, res: Response): Promise<void> {
             auctionConfig: true,
             extensions: {
                 orderBy: {
-                    createdAt: "asc"
-                }
+                    createdAt: "desc"
+                },
+                take: RFQ_DETAIL_EXTENSIONS_LIMIT
             },
             activityLogs: {
                 orderBy: {
-                    occurredAt: "asc"
-                }
+                    occurredAt: "desc"
+                },
+                take: RFQ_DETAIL_ACTIVITY_LOGS_LIMIT
             },
             bids: {
                 include: {
@@ -268,8 +365,9 @@ export async function getRFQ(req: Request, res: Response): Promise<void> {
                     }
                 },
                 orderBy: {
-                    receivedAt: "asc"
-                }
+                    receivedAt: "desc"
+                },
+                take: RFQ_DETAIL_BIDS_LIMIT
             }
         }
     });
@@ -279,13 +377,16 @@ export async function getRFQ(req: Request, res: Response): Promise<void> {
         return;
     }
 
-    if (req.user.role === "BUYER" && rfq.buyerId !== req.user.userId) {
-        res.status(403).json({ error: "Forbidden" });
-        return;
-    }
+    const rankingsRaw = await computeCurrentRankings(rfqId);
+    const rankings = rankingsRaw.map((entry) => ({
+        ...entry,
+        supplierName:
+            req.user?.role === "SUPPLIER"
+                ? censorNameForViewer(entry.supplierName, req.user.userId, entry.supplierId)
+                : entry.supplierName
+    }));
 
-    const rankings = await computeCurrentRankings(rfqId);
-    const rankByBidId = new Map(rankings.map((entry) => [entry.bidId, entry.rank]));
+    const rankByBidId = new Map(rankingsRaw.map((entry) => [entry.bidId, entry.rank]));
 
     const bids = rfq.bids.map((bid) => {
         const supplierName =
@@ -309,3 +410,8 @@ export async function getRFQ(req: Request, res: Response): Promise<void> {
         rankings
     });
 }
+
+
+
+
+

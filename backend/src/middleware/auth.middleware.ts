@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-
 import { verifyToken } from "../lib/auth.js";
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {

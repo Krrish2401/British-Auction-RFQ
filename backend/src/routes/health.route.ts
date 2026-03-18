@@ -1,6 +1,5 @@
 import { Router } from "express";
-
-import { verifyDatabaseConnection } from "../config/database.js";
+import { prisma } from "../lib/prisma.js";
 
 export const healthRouter = Router();
 
@@ -13,7 +12,7 @@ healthRouter.get("/health", (_req, res) => {
 
 healthRouter.get("/health/db", async (_req, res, next) => {
     try {
-        await verifyDatabaseConnection();
+        await prisma.$queryRaw`SELECT 1`;
 
         res.status(200).json({
             success: true,
