@@ -22,55 +22,45 @@ function getSystemTheme(): "light" | "dark" {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function resolveTheme(mode: ThemeMode): "light" | "dark" {
-    if (mode === "system") {
-        return getSystemTheme();
+function readStoredThemeMode(): ThemeMode {
+    if (typeof window === "undefined") {
+        return "system";
     }
 
-    return mode;
-}
+    const storedValue = window.localStorage.getItem(THEME_STORAGE_KEY);
 
-function applyThemeToDocument(mode: ThemeMode): "light" | "dark" {
-    const resolved = resolveTheme(mode);
+    if (storedValue === "light" || storedValue === "dark" || storedValue === "system") {
+        return storedValue;
+    }
 
-    document.documentElement.setAttribute("data-theme", resolved);
-    document.documentElement.style.colorScheme = resolved;
-
-    return resolved;
+    return "system";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [mode, setModeState] = useState<ThemeMode>("system");
-    const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+    const [mode, setModeState] = useState<ThemeMode>(() => readStoredThemeMode());
+    const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => getSystemTheme());
 
-    useEffect(() => {
-        const storedValue = window.localStorage.getItem(THEME_STORAGE_KEY);
-        const nextMode: ThemeMode =
-            storedValue === "light" || storedValue === "dark" || storedValue === "system"
-                ? storedValue
-                : "system";
-
-        setModeState(nextMode);
-        setResolvedTheme(applyThemeToDocument(nextMode));
-    }, []);
+    const resolvedTheme: "light" | "dark" = mode === "system" ? systemTheme : mode;
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
         const onSystemThemeChange = () => {
-            if (mode === "system") {
-                setResolvedTheme(applyThemeToDocument("system"));
-            }
+            setSystemTheme(mediaQuery.matches ? "dark" : "light");
         };
 
         mediaQuery.addEventListener("change", onSystemThemeChange);
         return () => mediaQuery.removeEventListener("change", onSystemThemeChange);
-    }, [mode]);
+    }, []);
+
+    useEffect(() => {
+        document.documentElement.setAttribute("data-theme", resolvedTheme);
+        document.documentElement.style.colorScheme = resolvedTheme;
+    }, [resolvedTheme]);
 
     const setMode = (nextMode: ThemeMode): void => {
         window.localStorage.setItem(THEME_STORAGE_KEY, nextMode);
         setModeState(nextMode);
-        setResolvedTheme(applyThemeToDocument(nextMode));
     };
 
     const value = useMemo(

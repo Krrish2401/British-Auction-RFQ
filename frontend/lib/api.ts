@@ -7,6 +7,31 @@ export type AuthUser = {
 
 type ApiFetchOptions = Omit<RequestInit, "credentials">;
 
+type ApiErrorPayload = {
+    error?: string;
+    message?: string;
+    code?: string;
+    errors?: string[];
+};
+
+export class ApiError extends Error {
+    readonly status: number;
+    readonly code?: string;
+    readonly errors?: string[];
+
+    constructor(message: string, options: { status: number; code?: string; errors?: string[] }) {
+        super(message);
+        this.name = "ApiError";
+        this.status = options.status;
+        this.code = options.code;
+        this.errors = options.errors;
+    }
+}
+
+export function isApiError(error: unknown): error is ApiError {
+    return error instanceof ApiError;
+}
+
 type RegisterData = {
     name: string;
     email: string;
@@ -154,6 +179,20 @@ export type BidsListItem = {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+function toApiError(status: number, payload: ApiErrorPayload): ApiError {
+    const message =
+        (typeof payload.error === "string" && payload.error) ||
+        (typeof payload.message === "string" && payload.message) ||
+        "Request failed";
+
+    const code = typeof payload.code === "string" ? payload.code : undefined;
+    const errors = Array.isArray(payload.errors)
+        ? payload.errors.filter((item): item is string => typeof item === "string")
+        : undefined;
+
+    return new ApiError(message, { status, code, errors });
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
     const method = options.method ?? "GET";
     const shouldSendJsonHeader = method !== "GET";
@@ -168,15 +207,10 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     });
 
     const contentType = response.headers.get("content-type") ?? "";
-    const data = contentType.includes("application/json") ? await response.json() : {};
+    const data: ApiErrorPayload | T = contentType.includes("application/json") ? await response.json() : {};
 
     if (!response.ok) {
-        if (Array.isArray(data?.errors)) {
-            throw new Error(JSON.stringify(data.errors));
-        }
-
-        const message = typeof data?.error === "string" ? data.error : "Request failed";
-        throw new Error(message);
+        throw toApiError(response.status, (data as ApiErrorPayload) ?? {});
     }
 
     return data as T;
