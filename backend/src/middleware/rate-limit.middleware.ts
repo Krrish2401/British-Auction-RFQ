@@ -12,6 +12,7 @@ type Entry = {
 };
 
 const store = new Map<string, Entry>();
+const bidCooldownStore = new Map<string, number>();
 
 function buildKey(req: Request, keyPrefix: string): string {
     const ip = req.ip ?? "unknown";
@@ -60,3 +61,32 @@ export const registerRateLimit = createRateLimiter({
     maxRequests: 5,
     keyPrefix: "auth-register"
 });
+
+const BID_COOLDOWN_MS = 12 * 1000;
+
+export function bidCooldownLimit(req: Request, res: Response, next: NextFunction): void {
+    const userId = req.user?.userId;
+    const rawRfqId = req.params.rfqId;
+    const rfqId = Array.isArray(rawRfqId) ? rawRfqId[0] : rawRfqId;
+
+    if (!userId || !rfqId) {
+        next();
+        return;
+    }
+
+    const key = `${userId}:${rfqId}`;
+    const now = Date.now();
+    const expiresAt = bidCooldownStore.get(key) ?? 0;
+
+    if (expiresAt > now) {
+        const retryAfterSeconds = Math.ceil((expiresAt - now) / 1000);
+        res.setHeader("Retry-After", String(retryAfterSeconds));
+        res.status(429).json({
+            error: "Bid cooldown active. Please wait before bidding again on this RFQ."
+        });
+        return;
+    }
+
+    bidCooldownStore.set(key, now + BID_COOLDOWN_MS);
+    next();
+}

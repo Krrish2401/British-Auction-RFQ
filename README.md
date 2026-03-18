@@ -162,7 +162,3 @@ If you change backend port, also update `NEXT_PUBLIC_API_URL`.
 - If backend fails on startup, verify all required backend env vars are present.
 - If login/auth fails between frontend and backend, verify frontend URL is `http://localhost:3000` and backend is running with cookie/CORS support.
 - If database errors appear, re-run `npm run prisma:generate` and `npm run prisma:push` in `backend/`.
-
-## License
-
-Private project.
